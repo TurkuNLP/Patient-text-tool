@@ -1,0 +1,223 @@
+<script
+  src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+  crossorigin="anonymous">
+</script>
+
+<style type="text/css"> @import url("http://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css");
+</style>
+
+<script src="http://localhost:5000/js/rangy-core.js"></script>
+<script src="http://localhost:5000/js/rangy-textrange.js"></script>
+
+<style>
+    label, input, textarea { display:block; }
+    input.text, textarea { margin-bottom:12px; width:95%; padding: .4em; }
+    fieldset { margin-top:25px; }
+		.highlight {background-color: yellow;}
+		.edit {padding: 0px 0px; display: inline; font-size: 12px }
+</style>
+
+<script>
+	/*
+	 * You are now entering custom javascript zone. Hopefully it's not too messy.
+	 *
+	*/
+
+	function getSelectionCharRange() {
+		return rangy.getSelection().getRangeAt(0).toCharacterRange($('.blacklight-text_text_fi')[1]);
+	}
+
+	$(function restoreAnnotations() {
+
+		// SQL: SELECT range_start, range_end, comment FROM annotations WHERE doc_id=?
+		window.char_range = {start: 0, end: 0};
+		$.post("http://localhost:5000/get_annotations", { doc_id: $('.blacklight-id')[1].textContent }, 
+						function(results) {
+							for (var i = 0; i < results.length; i++) { 
+								var char_range = {start: results[i].range_start, end: results[i].range_end};
+								makeHighlight(char_range, results[i].comment);
+							}
+						},"json");
+	});
+
+	function makeHighlight(char_range, comment) {
+			var highlight_id = char_range.start + "_" + char_range.end;
+
+			var range = rangy.createRange();
+			range.selectCharacters($('.blacklight-text_text_fi')[1], char_range.start, char_range.end);
+		
+			var anchor = document.createElement("a");
+			anchor.className = "highlight"
+			anchor.id = highlight_id;
+			anchor.title = comment;
+			range.surroundContents(anchor);
+
+			$("#" + highlight_id).on("click", function(event) {
+				highlight_id = event.target.id;
+
+				$("#selected_text").val( $("#" + highlight_id).text() );
+
+				$("#comment").val( $("#" + highlight_id).prop("title") );
+			
+
+				var range = rangy.createRange();
+				var textNode = $('.blacklight-text_text_fi')[1];
+				var range_start = highlight_id.split("_")[0];
+				var range_end = highlight_id.split("_")[1];		
+				window.char_range.start = range_start;
+				window.char_range.end = range_end;
+			
+				var save_button = $("#save");
+				save_button.prop("disabled", true);
+				save_button.addClass("ui-state-disabled");
+
+				var apply_button = $("#apply");
+				apply_button.prop("disabled", false);
+				apply_button.removeClass("ui-state-disabled");
+
+				var delete_button = $("#delete");
+				delete_button.prop("disabled", false);
+				delete_button.removeClass("ui-state-disabled");
+			
+				dialog.dialog("open");
+
+			});
+		
+			return highlight_id;
+			
+		}
+
+	$( function() {
+
+		// Don't let pressing the enter key reload the page.
+		$("input").keypress(function(event) {
+			if (event.which == 13) {
+					event.preventDefault();
+					return false;
+			}
+		});		
+
+  	window.dialog; 
+		var error_dialog, form;
+		window.dialog = $("#dialog-form").dialog({
+			autoOpen: false,
+			width: 640,
+			height: 480,
+			modal: true,
+			buttons: [
+				{	
+					text: "Save",
+					id: "save",
+					click: function() {
+						if ($("#comment").val() !== "") {
+							
+							var highlight_id = makeHighlight( window.char_range, $("#comment").val() );
+							
+							// SQL: INSERT INTO annotations VALUES(?,?,?,?,?)
+							$.post("http://localhost:5000/add_annotation", { doc_id: $('.blacklight-id')[1].textContent,
+										range_start: window.char_range.start, range_end: window.char_range.end, comment: $("#comment").val(),
+										selected_text: $("#selected_text").val() } );
+
+							dialog.dialog("close");
+
+						} else {
+							$("#comment").animate({ backgroundColor: "#FFFF88"}, 200);
+						}
+					}
+				},
+
+				{
+					text: "Apply changes",
+					id: "apply",
+					click: function(event) {
+
+						$("#" + window.char_range.start + "_" + window.char_range.end).prop("title", $("#comment").val());
+
+						// SQL: UPDATE annotations SET comment=? WHERE doc_id=? AND range_start=? AND range_end=?
+						$.post("http://localhost:5000/mod_annotation", { comment: $("#comment").val(), doc_id: $('.blacklight-id')[1].textContent,
+										range_start: window.char_range.start, range_end: window.char_range.end } );
+
+						dialog.dialog("close");
+
+					}
+				},
+
+				{ 
+					text: "Delete",
+					id: "delete",
+					click: function(event) {
+
+						$("#" + window.char_range.start + "_" + window.char_range.end).contents().unwrap();
+
+						// SQL: DELETE FROM annotations WHERE doc_id=? AND range_start=? AND range_end=?
+						$.post("http://localhost:5000/del_annotation", { doc_id: $('.blacklight-id')[1].textContent,
+										range_start: window.char_range.start, range_end: window.char_range.end } );
+
+						dialog.dialog("close");
+
+					}
+				}
+
+			],
+			close: function() {
+
+				$("#comment").css({backgroundColor: "initial"});
+				form[0].reset();
+
+    	}
+    });
+
+		error_dialog = $("#error-dialog").dialog({ autoOpen: false });
+
+    form = dialog.find("form").on("submit", function( event ) { });
+ 
+    $("#annotate").button().on("click", function() {
+			window.char_range = getSelectionCharRange();
+
+			if(window.char_range.start !== window.char_range.end){
+				var range = rangy.createRange();
+				range.selectCharacters($(".blacklight-text_text_fi")[1], window.char_range.start, window.char_range.end);
+				
+				$("#selected_text").val(range.text());
+
+				var save_button = $("#save");
+				save_button.prop("disabled", false);
+				save_button.removeClass("ui-state-disabled");
+
+				var apply_button = $("#apply");
+				apply_button.prop("disabled", true);
+				apply_button.addClass("ui-state-disabled");
+
+				var delete_button = $("#delete");
+				delete_button.prop("disabled", true);
+				delete_button.addClass("ui-state-disabled");
+				
+      	dialog.dialog("open");
+
+			} else {
+
+				error_dialog.dialog("open");
+
+			}
+    });
+		
+  } );
+</script>
+
+<div id="error-dialog" title="Help">You need to select some text first.</div>
+
+<div id="dialog-form" title="Annotate">
+	<form>
+    <fieldset>
+      <label for="comment">Comment</label>
+      <input type="text" name="comment" id="comment" class="text ui-widget-content ui-corner-all">
+      <label for="selected_text">Text</label>
+      <textarea rows=10 readonly style="resize:none;" name="selected_text" id="selected_text" class="text ui-widget-content ui-corner-all">
+			</textarea>
+ 
+      <!-- Allow form submission with keyboard without duplicating the dialog button -->
+      <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+    </fieldset>
+  </form>
+</div>

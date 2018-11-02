@@ -1,0 +1,19 @@
+<% # container for a single doc -%>
+
+<script>
+$(function() {
+	$.post("http://localhost:5000/get_completed", { doc_id: '<%= document.id %>'}, 
+					function(results) {
+						if (results === 1) {
+							$(".completed#<%= document.id %>").html('<font color="green" size=+2>&#10004</font>');
+						} else {
+							$(".completed#<%= document.id %>").html('<font color="red" size=+2>&#10008</font>');
+						}
+					},"json");
+});
+</script>
+
+<div class="document <%= render_document_class document %> document-position-<%= document_counter%> " data-document-counter="<%= document_counter %>" itemscope itemtype="<%= document.itemtype %>">
+  <%= render_document_partials document, blacklight_config.view_config(document_index_view_type).partials, :document_counter => document_counter %>
+Annotation completed: <span class="completed" id="<%= document.id %>"></span>
+</div>

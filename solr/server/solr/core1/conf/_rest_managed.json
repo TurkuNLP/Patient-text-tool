@@ -1,0 +1,8 @@
+{
+  "initArgs":{},
+  "initializedOn":"2018-06-11T08:26:06.746Z",
+  "updatedSinceInit":"2018-06-11T11:05:38.990Z",
+  "managedList":[{
+      "resourceId":"/schema/analysis/synonyms/finnish",
+      "numObservers":"0",
+      "class":"org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory$SynonymManager"}]}

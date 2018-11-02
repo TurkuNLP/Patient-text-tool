@@ -1,0 +1,36 @@
+<!-- <%= render :partial => 'show_tools' %> -->
+
+<script>
+$(function get_completion() {
+	$.post("http://localhost:5000/get_completed", { doc_id: $('.blacklight-id')[1].textContent }, 
+					function(results) {
+						if (results === 1) {
+							$("#completion_checkbox").prop("checked", true);
+						} else {
+							$("#completion_checkbox").prop("checked", false);
+						}
+					},"json");
+});
+
+function completion_handler(checkbox) {
+	console.log("clicked, state is: " + checkbox.checked);
+	if (checkbox.checked) {
+		$.post("http://localhost:5000/set_completed", { doc_id: $('.blacklight-id')[1].textContent } );
+	} else {
+		$.post("http://localhost:5000/set_not_completed", { doc_id: $('.blacklight-id')[1].textContent } );
+	}
+}
+</script>
+
+<br><br><br>
+<div>Mark completion:<input type="checkbox" style="transform: scale(1.5)" id="completion_checkbox" onclick="completion_handler(this)"></div>
+<br>
+<input type="button" value="Annotate" style="position: fixed;" id="annotate" onClick="">
+<% unless @document.more_like_this.empty? %>
+  <div class="panel panel-default">
+    <div class="panel-heading">More Like This</div>
+    <div class="panel-body">
+      <%= render :collection => @document.more_like_this, :partial => 'show_more_like_this', :as => :document %>
+    </div>
+  </div>
+<% end %>
