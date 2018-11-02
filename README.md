@@ -16,7 +16,7 @@ Then pull the image from the public repository:
 docker pull haamis/patient_text_tool
 ```
 
-#### Building the docker image manually from the sources.
+### Building the docker image manually from the sources.
 ```
 docker build -t patient_text_tool .
 ```
@@ -30,11 +30,15 @@ You can start the docker container with the command:
 docker run -d -p 127.0.0.1:3000:3000/tcp -p 127.0.0.1:5000:5000/tcp -p 127.0.0.1:8983:8983/tcp --name patient_text_tool haamis/patient_text_tool
 ```
 
-`-p` publishes given port to the host interfaces. With 127.0.0.1 these ports are only visible to localhost. It is possible to change the port on the host's side by changing the first port number, e.g. if you wanted the web server to be accessible on port 80: `-p 127.0.0.1:80:3000/tcp`.
+`-p` publishes given port to the host interfaces. With 127.0.0.1 these ports are only visible to localhost.
+It is possible to change the port on the host's side by changing the first port number, e.g. if you wanted the web server to be accessible on port 80:
+```
+-p 127.0.0.1:80:3000/tcp
+```
 `--name` specifies a name for the running container.
 The last argument is the name of the docker image to run.
 
-#### Managing the docker container
+### Managing the docker container
 
 You can stop or start the container with the commands `docker stop patient_text_tool` and `docker start patient_text_tool`. The start command is particularly useful for recovering from a reboot.
 
